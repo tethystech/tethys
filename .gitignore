@@ -1,0 +1,15 @@
+# Ignore local firebase config with secret keys
+firebase-config.js
+
+# Environment files
+.env
+
+# VS Code workspace
+.vscode/
+
+# Node modules (if used)
+node_modules/
+
+# Ignore system files
+.DS_Store
+Thumbs.db

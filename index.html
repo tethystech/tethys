@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Tethys Tech ofrece soluciones tecnológicas minimalistas y seguras para empresas, con acceso exclusivo para clientes." />
+  <title>Tethys Tech</title>
+  <link rel="icon" href="images/Favicon 2.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="header-link">
+        <img src="images/Tethys Tech.svg" alt="Tethys Tech logo" class="header-logo" />
+        <span class="header-text">Tethys Tech</span>
+      </a>
+      <div class="header-actions">
+        <button id="bubble-toggle" class="bubble-toggle active" type="button" aria-pressed="true" aria-label="Burbujas activas">
+          <i class="fa-solid fa-droplet" aria-hidden="true"></i>
+          <span class="sr-only">Burbujas activas</span>
+        </button>
+        <a href="clientes.html" class="header-client-area">Área de Clientes</a>
+      </div>
+    </div>
+  </header>
+  <main class="site-main" role="main">
+    <section class="section" id="servicios">
+      <div class="container">
+        <div class="section-header">
+          <span class="eyebrow">Nuestros servicios</span>
+          <h2>Soluciones adaptadas a cada cliente</h2>
+          <p>Trabajamos con proximidad, confianza e innovación para entregar tecnología sin fricción.</p>
+        </div>
+        <div class="grid cards-grid">
+          <article class="card">
+            <div class="card-heading">
+              <div class="card-icon"> <i class="fa-solid fa-handshake-angle"></i> </div>
+              <h3>Atención personal</h3>
+            </div>
+            <p>Un trato cercano y humano con soporte claro y transparente en cada etapa.</p>
+          </article>
+          <article class="card">
+            <div class="card-heading">
+              <div class="card-icon"> <i class="fa-solid fa-cogs"></i> </div>
+              <h3>Soluciones a medida</h3>
+            </div>
+            <p>Desarrollamos proyectos alineados con tus objetivos y tu ritmo de crecimiento.</p>
+          </article>
+          <article class="card">
+            <div class="card-heading">
+              <div class="card-icon"> <i class="fa-solid fa-droplet"></i> </div>
+              <h3>Tecnología fluida</h3>
+            </div>
+            <p>Implementaciones ágiles, eficientes y con interfaces limpias que funcionan sin esfuerzo.</p>
+          </article>
+          <article class="card">
+            <div class="card-heading">
+              <div class="card-icon"> <i class="fa-solid fa-shield-halved"></i> </div>
+              <h3>Acompañamiento continuo</h3>
+            </div>
+            <p>Soporte constante para que tu solución evolucione con seguridad y confianza.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tethys" id="about">
+      <div class="container">
+        <div class="tethys-content">
+          <div class="tethys-text">
+            <span class="eyebrow">Nuestra inspiración</span>
+            <h2>Tethys: la diosa del agua que sustenta la vida</h2>
+            <p>En la mitología griega, Tethys es la titánide del agua fresca, madre de los ríos y las fuentes. Su nombre evoca fluidez, pureza y el ciclo continuo de transformación. Elegimos este nombre porque representa los principios que nos guían:</p>
+          </div>
+          <div class="tethys-waves">
+            <div class="wave wave-1">
+              <div class="wave-content">
+                <h3>Fluidez</h3>
+                <p>La tecnología debe fluir sin fricción, adaptándose a tus necesidades.</p>
+              </div>
+            </div>
+            <div class="wave wave-2">
+              <div class="wave-content">
+                <h3>Pureza</h3>
+                <p>Soluciones limpias, simples y sin complejidades innecesarias.</p>
+              </div>
+            </div>
+            <div class="wave wave-3">
+              <div class="wave-content">
+                <h3>Sustento</h3>
+                <p>Así como el agua da vida, nuestras soluciones impulsan tu crecimiento.</p>
+              </div>
+            </div>
+            <div class="wave wave-4">
+              <div class="wave-content">
+                <h3>Transformación continua</h3>
+                <p>Como el agua que siempre fluye, evolucionamos contigo.</p>
+              </div>
+            </div>
+          </div>
+          <div class="tethys-closing">
+            <p>Tethys Tech nace de la convicción de que la tecnología debe ser un aliado, no un obstáculo. Un compañero que acompaña tu crecimiento con claridad, humanidad y confianza.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" aria-label="Pie de página">
+    <div class="container footer-grid">
+      <div class="footer-meter">
+        <div class="footer-meter-header">
+          <div class="footer-meter-title">
+            <div>
+              <span class="footer-meter-label">Nivel de flujo</span>
+              <p class="footer-meter-note">Atrapa burbujas para llenar el medidor.</p>
+            </div>
+          </div>
+          <span class="footer-meter-value" id="bubble-meter-value">0%</span>
+        </div>
+        <div class="bubble-meter" id="bubble-meter">
+          <div class="bubble-meter-fill" id="bubble-meter-fill"></div>
+        </div>
+      </div>
+      <p>© 2026 Tethys Tech</p>
+    </div>
+  </footer>
+  <script src="bubbles.js"></script>
+</body>
+</html>

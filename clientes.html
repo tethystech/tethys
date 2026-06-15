@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Área de clientes de Tethys Tech." />
+  <title>Área de Clientes | Tethys Tech</title>
+  <link rel="icon" href="images/Favicon 2.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="header-link">
+        <img src="images/Tethys Tech.svg" alt="Tethys Tech logo" class="header-logo" />
+        <span class="header-text">Tethys Tech</span>
+      </a>
+      <div class="header-actions">
+        <a href="index.html" class="header-client-area">Volver a inicio</a>
+      </div>
+    </div>
+  </header>
+  <main class="site-main" role="main">
+    <section class="section" aria-label="Área de clientes">
+      <div class="container">
+        <div id="client-area-state" class="client-area-state">
+          <div id="auth-section" class="client-card auth-card">
+            <div class="auth-switch" role="tablist" aria-label="Seleccionar formulario de autenticación">
+              <button type="button" id="show-login-btn" class="auth-switch-button active" aria-selected="true">Iniciar sesión</button>
+              <button type="button" id="show-signup-btn" class="auth-switch-button" aria-selected="false">Crear cuenta</button>
+            </div>
+            <p id="auth-status-message" class="alert-message"></p>
+            <form id="login-form" class="auth-form" autocomplete="on">
+              <h2>Iniciar sesión</h2>
+              <div class="input-group">
+                <label for="login-email">Email</label>
+                <input id="login-email" type="email" required autocomplete="email" placeholder="cliente@ejemplo.com" />
+              </div>
+              <div class="input-group">
+                <label for="login-password">Contraseña</label>
+                <input id="login-password" type="password" required autocomplete="current-password" placeholder="Contraseña" />
+              </div>
+              <button type="submit" class="button primary">Entrar</button>
+            </form>
+
+            <form id="signup-form" class="auth-form hidden" autocomplete="on">
+              <h2>Crear cuenta</h2>
+              <div class="input-group">
+                <label for="signup-email">Email</label>
+                <input id="signup-email" type="email" required autocomplete="email" placeholder="cliente@ejemplo.com" />
+              </div>
+              <div class="input-group">
+                <label for="signup-password">Contraseña</label>
+                <input id="signup-password" type="password" required autocomplete="new-password" placeholder="Contraseña" />
+              </div>
+              <button type="submit" class="button primary">Registrar cuenta</button>
+            </form>
+          </div>
+
+          <div id="dashboard-section" class="client-card hidden">
+            <div class="dashboard-header">
+              <div>
+                <span class="eyebrow">Panel del cliente</span>
+                <h2 id="welcome-name">Mis proyectos</h2>
+                <p id="user-email" class="muted-text"></p>
+              </div>
+              <button id="sign-out-btn" class="button secondary">Cerrar sesión</button>
+            </div>
+
+            <div id="admin-note" class="admin-note hidden">
+              Tu usuario tiene permisos de administrador. Podrás aprobar o cancelar proyectos desde este panel.
+            </div>
+
+            <div id="project-area">
+              <div id="create-project-card" class="project-card">
+                <h3>Crear nuevo proyecto</h3>
+                <form id="project-form">
+                  <div class="input-group">
+                    <label for="project-name">Nombre del proyecto</label>
+                    <input id="project-name" type="text" required placeholder="Nombre del proyecto" />
+                  </div>
+                  <div class="input-group">
+                    <label for="project-description">Descripción</label>
+                    <textarea id="project-description" placeholder="Describe brevemente el proyecto"></textarea>
+                  </div>
+                  <button type="submit" class="button primary">Enviar proyecto</button>
+                  <p id="project-status-message" class="alert-message"></p>
+                </form>
+              </div>
+
+              <div id="projects-list" class="project-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer" aria-label="Pie de página">
+    <div class="container footer-grid">
+      <p>© 2026 Tethys Tech</p>
+    </div>
+  </footer>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      where,
+      orderBy,
+      addDoc,
+      getDocs,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    let firebaseConfig;
+    try {
+      // eslint-disable-next-line import/no-unresolved
+      firebaseConfig = (await import('./firebase-config.js')).default;
+    } catch (e) {
+      console.error('Missing firebase-config.js. Copy firebase-config.example.js to firebase-config.js and fill values.');
+      document.getElementById('auth-status-message').textContent = 'Falta firebase-config.js — revisa README_FIREBASE.md';
+      throw e; // stop execution so other Firebase calls don't fail silently
+    }
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const authSection = document.getElementById("auth-section");
+    const dashboardSection = document.getElementById("dashboard-section");
+    const welcomeName = document.getElementById("welcome-name");
+    const userEmail = document.getElementById("user-email");
+    const adminNote = document.getElementById("admin-note");
+    const projectsList = document.getElementById("projects-list");
+    const projectForm = document.getElementById("project-form");
+    const projectStatusMessage = document.getElementById("project-status-message");
+    const authStatusMessage = document.getElementById("auth-status-message");
+
+    const signOutBtn = document.getElementById("sign-out-btn");
+    const loginForm = document.getElementById("login-form");
+    const signupForm = document.getElementById("signup-form");
+    const showLoginBtn = document.getElementById("show-login-btn");
+    const showSignupBtn = document.getElementById("show-signup-btn");
+
+    const userState = {
+      currentUser: null,
+      isAdmin: false
+    };
+
+    function showSection(section) {
+      authSection.classList.toggle("hidden", section !== "auth");
+      dashboardSection.classList.toggle("hidden", section !== "dashboard");
+    }
+
+    function showAlert(message, isError = true, target = "project") {
+      const element = target === "auth" ? authStatusMessage : projectStatusMessage;
+      element.textContent = message;
+      element.classList.toggle("success-message", !isError);
+      element.classList.toggle("alert-message", isError);
+    }
+
+    function clearAlert() {
+      projectStatusMessage.textContent = "";
+      authStatusMessage.textContent = "";
+    }
+
+    function switchAuthForm(form) {
+      const isLogin = form === "login";
+      loginForm.classList.toggle("hidden", !isLogin);
+      signupForm.classList.toggle("hidden", isLogin);
+      showLoginBtn.classList.toggle("active", isLogin);
+      showSignupBtn.classList.toggle("active", !isLogin);
+      showLoginBtn.setAttribute("aria-selected", isLogin.toString());
+      showSignupBtn.setAttribute("aria-selected", (!isLogin).toString());
+      clearAlert();
+    }
+
+    showLoginBtn.addEventListener("click", () => switchAuthForm("login"));
+    showSignupBtn.addEventListener("click", () => switchAuthForm("signup"));
+
+    function formatDate(value) {
+      if (!value) return "-";
+      const date = value.toDate ? value.toDate() : value instanceof Date ? value : null;
+      if (!date) return "-";
+      return date.toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+    }
+
+    async function ensureUserProfile(user) {
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          role: "client",
+          email: user.email
+        });
+        return { role: "client" };
+      }
+      return userSnap.data();
+    }
+
+    function renderProjectItem(project, projectId) {
+      const container = document.createElement("article");
+      container.className = "project-card";
+
+      const projectName = project.nombre || "Proyecto sin nombre";
+      const clienteEmail = project.clienteEmail || "Cliente no disponible";
+      const projectDate = formatDate(project.fechaCreacion);
+      const status = project.estado || "Solicitado";
+
+      const statusBadge = `<span class="status-pill status-${status.toLowerCase()}">${status}</span>`;
+
+      let stateControl = statusBadge;
+      if (userState.isAdmin) {
+        stateControl = `
+          <label for="status-select-${projectId}">Estado</label>
+          <select id="status-select-${projectId}" class="status-select" data-project-id="${projectId}">
+            <option value="Solicitado" ${status === "Solicitado" ? "selected" : ""}>Solicitado</option>
+            <option value="Aprobado" ${status === "Aprobado" ? "selected" : ""}>Aprobado</option>
+            <option value="Cancelado" ${status === "Cancelado" ? "selected" : ""}>Cancelado</option>
+          </select>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="project-card-header">
+          <h3>${projectName}</h3>
+          ${userState.isAdmin ? `<p class="muted-text">Cliente: ${clienteEmail}</p>` : ""}
+        </div>
+        <div class="project-meta">
+          <span>Creado: ${projectDate}</span>
+          <span>${statusBadge}</span>
+        </div>
+        <p>${project.descripcion || "Sin descripción adicional."}</p>
+        <div class="project-actions">
+          ${userState.isAdmin ? stateControl : ""}
+        </div>
+      `;
+
+      if (userState.isAdmin) {
+        const select = container.querySelector("select");
+        select?.addEventListener("change", async (event) => {
+          const newStatus = event.target.value;
+          await updateProjectStatus(projectId, newStatus);
+        });
+      }
+
+      return container;
+    }
+
+    async function loadProjects() {
+      clearAlert();
+      projectsList.innerHTML = "";
+      const projectsRef = collection(db, "proyectos");
+      let projectsQuery;
+      if (userState.isAdmin) {
+        projectsQuery = query(projectsRef, orderBy("fechaCreacion", "desc"));
+      } else {
+        projectsQuery = query(
+          projectsRef,
+          where("clienteId", "==", userState.currentUser.uid),
+          orderBy("fechaCreacion", "desc")
+        );
+      }
+
+      const snapshot = await getDocs(projectsQuery);
+      if (snapshot.empty) {
+        const message = document.createElement("p");
+        message.textContent = userState.isAdmin
+          ? "No hay proyectos en la base de datos."
+          : "Aún no has creado ningún proyecto.";
+        projectsList.appendChild(message);
+        return;
+      }
+
+      snapshot.forEach((docItem) => {
+        const project = docItem.data();
+        projectsList.appendChild(renderProjectItem(project, docItem.id));
+      });
+    }
+
+    async function updateProjectStatus(projectId, newStatus) {
+      try {
+        await updateDoc(doc(db, "proyectos", projectId), {
+          estado: newStatus
+        });
+        showAlert(`Estado actualizado a ${newStatus}.`, false);
+        await loadProjects();
+      } catch (error) {
+        showAlert("No se pudo actualizar el estado. Revisa permisos y conexión.");
+        console.error(error);
+      }
+    }
+
+    async function createProject(event) {
+      event.preventDefault();
+      clearAlert();
+
+      const name = document.getElementById("project-name").value.trim();
+      const description = document.getElementById("project-description").value.trim();
+
+      if (!name) {
+        showAlert("El nombre del proyecto es obligatorio.");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "proyectos"), {
+          clienteId: userState.currentUser.uid,
+          clienteEmail: userState.currentUser.email,
+          nombre: name,
+          descripcion: description,
+          estado: "Solicitado",
+          fechaCreacion: serverTimestamp()
+        });
+        showAlert("Proyecto creado correctamente.", false);
+        projectForm.reset();
+        await loadProjects();
+      } catch (error) {
+        showAlert("No se pudo crear el proyecto. Intenta de nuevo.");
+        console.error(error);
+      }
+    }
+
+    async function startDashboard(user) {
+      userState.currentUser = user;
+      const profile = await ensureUserProfile(user);
+      const isAdmin = profile.role === "admin";
+      userState.isAdmin = isAdmin;
+
+      welcomeName.textContent = isAdmin ? "Panel de administrador" : "Mis proyectos";
+      userEmail.textContent = user.email;
+      adminNote.classList.toggle("hidden", !isAdmin);
+      showSection("dashboard");
+      await loadProjects();
+    }
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearAlert();
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        const message = error?.message || "Error al iniciar sesión. Verifica email y contraseña.";
+        showAlert(message, true, "auth");
+        console.error("Firebase login error:", error);
+      }
+    });
+
+    signupForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearAlert();
+      const email = document.getElementById("signup-email").value.trim();
+      const password = document.getElementById("signup-password").value;
+      try {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        await ensureUserProfile(result.user);
+      } catch (error) {
+        const message = error?.message || "No se pudo crear la cuenta. Verifica los datos e intenta de nuevo.";
+        showAlert(message, true, "auth");
+        console.error("Firebase signup error:", error);
+      }
+    });
+
+    signOutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+      showSection("auth");
+    });
+
+    projectForm.addEventListener("submit", createProject);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await startDashboard(user);
+      } else {
+        showSection("auth");
+      }
+    });
+  </script>
+</body>
+</html>
