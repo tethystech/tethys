@@ -14,4 +14,16 @@ cp firebase-config.example.js firebase-config.js
 
 2. Open `firebase-config.js` and paste your Firebase web app config values.
 
-3. Deploy or run your site locally. `firebase-config.js` will be used at runtime.
+3. Push your site to GitHub.
+
+4. Add GitHub repository secrets for the workflow:
+
+- `FIREBASE_API_KEY`
+- `FIREBASE_AUTH_DOMAIN`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_STORAGE_BUCKET`
+- `FIREBASE_MESSAGING_SENDER_ID`
+- `FIREBASE_APP_ID`
+- `FIREBASE_MEASUREMENT_ID`
+
+5. The workflow `.github/workflows/deploy-pages.yml` will create `firebase-config.js` during deployment, so the repo never stores secrets.
