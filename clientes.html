@@ -17,7 +17,7 @@
         <span class="header-text">Tethys Tech</span>
       </a>
       <div class="header-actions">
-        <a href="index.html" class="header-client-area">Volver a inicio</a>
+        <button id="sign-out-btn" class="header-client-area header-sign-out-btn hidden">Cerrar sesión</button>
       </div>
     </div>
   </header>
@@ -25,7 +25,7 @@
     <section class="section" aria-label="Área de clientes">
       <div class="container">
         <div id="client-area-state" class="client-area-state">
-          <div id="auth-section" class="client-card auth-card">
+          <div id="auth-section" class="client-card auth-card hidden">
             <div class="auth-switch" role="tablist" aria-label="Seleccionar formulario de autenticación">
               <button type="button" id="show-login-btn" class="auth-switch-button active" aria-selected="true">Iniciar sesión</button>
               <button type="button" id="show-signup-btn" class="auth-switch-button" aria-selected="false">Crear cuenta</button>
@@ -47,6 +47,18 @@
             <form id="signup-form" class="auth-form hidden" autocomplete="on">
               <h2>Crear cuenta</h2>
               <div class="input-group">
+                <label for="signup-name">Nombre</label>
+                <input id="signup-name" type="text" required autocomplete="name" placeholder="Nombre" />
+              </div>
+              <div class="input-group">
+                <label for="signup-first-surname">Apellido paterno</label>
+                <input id="signup-first-surname" type="text" required placeholder="Apellido paterno" />
+              </div>
+              <div class="input-group">
+                <label for="signup-second-surname">Apellido materno</label>
+                <input id="signup-second-surname" type="text" required placeholder="Apellido materno" />
+              </div>
+              <div class="input-group">
                 <label for="signup-email">Email</label>
                 <input id="signup-email" type="email" required autocomplete="email" placeholder="cliente@ejemplo.com" />
               </div>
@@ -58,31 +70,27 @@
             </form>
           </div>
 
-          <div id="dashboard-section" class="client-card hidden">
+          <div id="dashboard-section" class="dashboard-content hidden">
             <div class="dashboard-header">
               <div>
-                <span class="eyebrow">Panel del cliente</span>
-                <h2 id="welcome-name">Mis proyectos</h2>
-                <p id="user-email" class="muted-text"></p>
+                <p id="welcome-name" class="eyebrow">Mis proyectos</p>
               </div>
-              <button id="sign-out-btn" class="button secondary">Cerrar sesión</button>
+              <div class="dashboard-header-actions">
+                <button id="toggle-create-project" class="circle-add-button" aria-label="Crear nuevo proyecto">+</button>
+              </div>
             </div>
-
+            <hr>
             <div id="admin-note" class="admin-note hidden">
               Tu usuario tiene permisos de administrador. Podrás aprobar o cancelar proyectos desde este panel.
             </div>
 
             <div id="project-area">
-              <div id="create-project-card" class="project-card">
+              <div id="create-project-card" class="project-card hidden">
                 <h3>Crear nuevo proyecto</h3>
                 <form id="project-form">
-                  <div class="input-group">
+                      <div class="input-group">
                     <label for="project-name">Nombre del proyecto</label>
                     <input id="project-name" type="text" required placeholder="Nombre del proyecto" />
-                  </div>
-                  <div class="input-group">
-                    <label for="project-description">Descripción</label>
-                    <textarea id="project-description" placeholder="Describe brevemente el proyecto"></textarea>
                   </div>
                   <button type="submit" class="button primary">Enviar proyecto</button>
                   <p id="project-status-message" class="alert-message"></p>
@@ -142,7 +150,6 @@
     const authSection = document.getElementById("auth-section");
     const dashboardSection = document.getElementById("dashboard-section");
     const welcomeName = document.getElementById("welcome-name");
-    const userEmail = document.getElementById("user-email");
     const adminNote = document.getElementById("admin-note");
     const projectsList = document.getElementById("projects-list");
     const projectForm = document.getElementById("project-form");
@@ -150,10 +157,13 @@
     const authStatusMessage = document.getElementById("auth-status-message");
 
     const signOutBtn = document.getElementById("sign-out-btn");
+    const toggleCreateProjectBtn = document.getElementById("toggle-create-project");
+    const createProjectCard = document.getElementById("create-project-card");
     const loginForm = document.getElementById("login-form");
     const signupForm = document.getElementById("signup-form");
     const showLoginBtn = document.getElementById("show-login-btn");
     const showSignupBtn = document.getElementById("show-signup-btn");
+    const pageBody = document.body;
 
     const userState = {
       currentUser: null,
@@ -162,7 +172,12 @@
 
     function showSection(section) {
       authSection.classList.toggle("hidden", section !== "auth");
+      authSection.hidden = section !== "auth";
       dashboardSection.classList.toggle("hidden", section !== "dashboard");
+      dashboardSection.hidden = section !== "dashboard";
+      pageBody.classList.toggle("dashboard-visible", section === "dashboard");
+      signOutBtn.classList.toggle("hidden", section !== "dashboard");
+      signOutBtn.hidden = section !== "dashboard";
     }
 
     function showAlert(message, isError = true, target = "project") {
@@ -190,6 +205,15 @@
 
     showLoginBtn.addEventListener("click", () => switchAuthForm("login"));
     showSignupBtn.addEventListener("click", () => switchAuthForm("signup"));
+    toggleCreateProjectBtn.addEventListener("click", () => {
+      const isHidden = createProjectCard.classList.toggle("hidden");
+      toggleCreateProjectBtn.setAttribute("aria-pressed", String(!isHidden));
+      toggleCreateProjectBtn.setAttribute(
+        "aria-label",
+        isHidden ? "Mostrar formulario de nuevo proyecto" : "Ocultar formulario de nuevo proyecto"
+      );
+      toggleCreateProjectBtn.textContent = "+";
+    });
 
     function formatDate(value) {
       if (!value) return "-";
@@ -202,34 +226,78 @@
       });
     }
 
-    async function ensureUserProfile(user) {
+    async function ensureUserProfile(user, profileData = {}) {
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
       if (!userSnap.exists()) {
-        await setDoc(userRef, {
+        const profile = {
           role: "client",
-          email: user.email
-        });
-        return { role: "client" };
+          email: user.email,
+          name: profileData.name || "",
+          firstSurname: profileData.firstSurname || "",
+          secondSurname: profileData.secondSurname || ""
+        };
+        await setDoc(userRef, profile);
+        return profile;
       }
-      return userSnap.data();
+
+      const existingProfile = userSnap.data();
+      const updatedProfile = {
+        ...existingProfile,
+        ...(profileData.name ? { name: profileData.name } : {}),
+        ...(profileData.firstSurname ? { firstSurname: profileData.firstSurname } : {}),
+        ...(profileData.secondSurname ? { secondSurname: profileData.secondSurname } : {})
+      };
+
+      if (profileData.name || profileData.firstSurname || profileData.secondSurname) {
+        await updateDoc(userRef, updatedProfile);
+      }
+
+      return updatedProfile;
+    }
+
+    const clientProfileCache = new Map();
+
+    async function fetchClientFullName(clienteId) {
+      if (!clienteId) return "Cliente desconocido";
+      if (clientProfileCache.has(clienteId)) {
+        return clientProfileCache.get(clienteId);
+      }
+
+      try {
+        const clientRef = doc(db, "users", clienteId);
+        const clientSnap = await getDoc(clientRef);
+        if (!clientSnap.exists()) {
+          clientProfileCache.set(clienteId, "Cliente desconocido");
+          return "Cliente desconocido";
+        }
+
+        const clientData = clientSnap.data();
+        const fullName = [clientData.name, clientData.firstSurname, clientData.secondSurname].filter(Boolean).join(" ");
+        const label = fullName || "Cliente desconocido";
+        clientProfileCache.set(clienteId, label);
+        return label;
+      } catch (error) {
+        console.error("Error cargando perfil del cliente:", error);
+        clientProfileCache.set(clienteId, "Cliente desconocido");
+        return "Cliente desconocido";
+      }
     }
 
     function renderProjectItem(project, projectId) {
       const container = document.createElement("article");
-      container.className = "project-card";
+      container.className = "project-item";
 
       const projectName = project.nombre || "Proyecto sin nombre";
-      const clienteEmail = project.clienteEmail || "Cliente no disponible";
       const projectDate = formatDate(project.fechaCreacion);
       const status = project.estado || "Solicitado";
+      const clientFullName = project.clienteFullName || "Cliente desconocido";
 
       const statusBadge = `<span class="status-pill status-${status.toLowerCase()}">${status}</span>`;
 
       let stateControl = statusBadge;
       if (userState.isAdmin) {
         stateControl = `
-          <label for="status-select-${projectId}">Estado</label>
           <select id="status-select-${projectId}" class="status-select" data-project-id="${projectId}">
             <option value="Solicitado" ${status === "Solicitado" ? "selected" : ""}>Solicitado</option>
             <option value="Aprobado" ${status === "Aprobado" ? "selected" : ""}>Aprobado</option>
@@ -239,17 +307,14 @@
       }
 
       container.innerHTML = `
-        <div class="project-card-header">
-          <h3>${projectName}</h3>
-          ${userState.isAdmin ? `<p class="muted-text">Cliente: ${clienteEmail}</p>` : ""}
-        </div>
-        <div class="project-meta">
-          <span>Creado: ${projectDate}</span>
-          <span>${statusBadge}</span>
-        </div>
-        <p>${project.descripcion || "Sin descripción adicional."}</p>
-        <div class="project-actions">
-          ${userState.isAdmin ? stateControl : ""}
+        <div class="project-item-header">
+          <div>
+            <h3>${projectName}</h3>
+            <p class="project-username">Administrador: ${clientFullName}</p>
+          </div>
+          <div class="project-item-status">
+            ${stateControl}
+          </div>
         </div>
       `;
 
@@ -272,15 +337,27 @@
       if (userState.isAdmin) {
         projectsQuery = query(projectsRef, orderBy("fechaCreacion", "desc"));
       } else {
-        projectsQuery = query(
-          projectsRef,
-          where("clienteId", "==", userState.currentUser.uid),
-          orderBy("fechaCreacion", "desc")
-        );
+        projectsQuery = query(projectsRef, where("clienteId", "==", userState.currentUser.uid));
       }
 
       const snapshot = await getDocs(projectsQuery);
-      if (snapshot.empty) {
+      const projects = [];
+
+      snapshot.forEach((docItem) => {
+        projects.push({ id: docItem.id, data: docItem.data() });
+      });
+
+      const enrichedProjects = await Promise.all(
+        projects.map(async (projectItem) => ({
+          id: projectItem.id,
+          data: {
+            ...projectItem.data,
+            clienteFullName: await fetchClientFullName(projectItem.data.clienteId)
+          }
+        }))
+      );
+
+      if (enrichedProjects.length === 0) {
         const message = document.createElement("p");
         message.textContent = userState.isAdmin
           ? "No hay proyectos en la base de datos."
@@ -289,9 +366,16 @@
         return;
       }
 
-      snapshot.forEach((docItem) => {
-        const project = docItem.data();
-        projectsList.appendChild(renderProjectItem(project, docItem.id));
+      if (!userState.isAdmin) {
+        enrichedProjects.sort((a, b) => {
+          const aTime = a.data.fechaCreacion?.toMillis ? a.data.fechaCreacion.toMillis() : 0;
+          const bTime = b.data.fechaCreacion?.toMillis ? b.data.fechaCreacion.toMillis() : 0;
+          return bTime - aTime;
+        });
+      }
+
+      enrichedProjects.forEach((projectItem) => {
+        projectsList.appendChild(renderProjectItem(projectItem.data, projectItem.id));
       });
     }
 
@@ -313,28 +397,52 @@
       clearAlert();
 
       const name = document.getElementById("project-name").value.trim();
-      const description = document.getElementById("project-description").value.trim();
 
       if (!name) {
         showAlert("El nombre del proyecto es obligatorio.");
         return;
       }
 
+      const uid = userState.currentUser?.uid;
+      if (!uid) {
+        showAlert("No se encontró usuario activo. Inicia sesión de nuevo.");
+        return;
+      }
+
+      const docData = {
+        clienteId: uid,
+        nombre: name,
+        estado: "Solicitado",
+        fechaCreacion: new Date()
+      };
+
       try {
-        await addDoc(collection(db, "proyectos"), {
-          clienteId: userState.currentUser.uid,
-          clienteEmail: userState.currentUser.email,
-          nombre: name,
-          descripcion: description,
-          estado: "Solicitado",
-          fechaCreacion: serverTimestamp()
-        });
+        console.info('Auth currentUser (pre-create):', auth.currentUser);
+        if (!auth.currentUser) {
+          showAlert('Usuario no autenticado en el cliente — vuelve a iniciar sesión.');
+          return;
+        }
+        try {
+          const token = await auth.currentUser.getIdToken();
+          console.info('ID token length:', token?.length);
+        } catch (tErr) {
+          console.warn('No se pudo obtener token ID del usuario:', tErr);
+        }
+        // log project id from config if present
+        try {
+          console.info('Firebase projectId:', firebaseConfig?.projectId || '(no definido)');
+        } catch (cfgErr) {
+          console.warn('No se pudo leer firebaseConfig:', cfgErr);
+        }
+
+        await addDoc(collection(db, "proyectos"), docData);
         showAlert("Proyecto creado correctamente.", false);
         projectForm.reset();
         await loadProjects();
       } catch (error) {
-        showAlert("No se pudo crear el proyecto. Intenta de nuevo.");
-        console.error(error);
+        const code = error?.code || error?.message || '';
+        showAlert(`No se pudo crear el proyecto. ${code}`);
+        console.error("Create project error:", error);
       }
     }
 
@@ -344,8 +452,8 @@
       const isAdmin = profile.role === "admin";
       userState.isAdmin = isAdmin;
 
-      welcomeName.textContent = isAdmin ? "Panel de administrador" : "Mis proyectos";
-      userEmail.textContent = user.email;
+      const fullName = [profile.name, profile.firstSurname, profile.secondSurname].filter(Boolean).join(" ");
+      welcomeName.textContent = isAdmin ? "Panel de administrador" : fullName || "Mis proyectos";
       adminNote.classList.toggle("hidden", !isAdmin);
       showSection("dashboard");
       await loadProjects();
@@ -368,11 +476,14 @@
     signupForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       clearAlert();
+      const name = document.getElementById("signup-name").value.trim();
+      const firstSurname = document.getElementById("signup-first-surname").value.trim();
+      const secondSurname = document.getElementById("signup-second-surname").value.trim();
       const email = document.getElementById("signup-email").value.trim();
       const password = document.getElementById("signup-password").value;
       try {
         const result = await createUserWithEmailAndPassword(auth, email, password);
-        await ensureUserProfile(result.user);
+        await ensureUserProfile(result.user, { name, firstSurname, secondSurname });
       } catch (error) {
         const message = error?.message || "No se pudo crear la cuenta. Verifica los datos e intenta de nuevo.";
         showAlert(message, true, "auth");

@@ -23,23 +23,22 @@ service cloud.firestore {
 
     match /proyectos/{projectId} {
       allow create: if isSignedIn()
-                    && request.resource.data.clienteId == request.auth.uid
-                    && request.resource.data.clienteEmail == request.auth.token.email
-                    && request.resource.data.estado == "Solicitado"
-                    && request.resource.data.nombre is string
-                    && request.resource.data.fechaCreacion is timestamp;
+            && request.resource.data.clienteId == request.auth.uid
+            && request.resource.data.estado == "Solicitado"
+            && request.resource.data.nombre is string
+            // Accept writes that include at least these three fields; server may add `fechaCreacion`
+            && request.resource.data.keys().hasAll(["clienteId", "nombre", "estado"]);
       allow read: if isSignedIn()
                   && (resource.data.clienteId == request.auth.uid || isAdmin());
-      allow update: if isSignedIn()
-                    && (
-                      isAdmin()
-                      || (
-                          resource.data.clienteId == request.auth.uid
-                          && request.resource.data.clienteId == resource.data.clienteId
-                          && request.resource.data.clienteEmail == resource.data.clienteEmail
-                          && request.resource.data.estado == resource.data.estado
-                        )
-                    );
+      allow update: if isAdmin()
+                    || (
+                        isSignedIn()
+                        && resource.data.clienteId == request.auth.uid
+                        && request.resource.data.clienteId == resource.data.clienteId
+                        && request.resource.data.nombre == resource.data.nombre
+                        && request.resource.data.estado == resource.data.estado
+                        && request.resource.data.fechaCreacion == resource.data.fechaCreacion
+                      );
       allow delete: if isAdmin();
     }
   }
