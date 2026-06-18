@@ -48,3 +48,17 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Check published firebase-config.js
+        if: always()
+        run: |
+          echo "Published page URL: ${{ steps.deployment.outputs.page_url }}"
+          PUBLISHED_URL="${{ steps.deployment.outputs.page_url }}"
+          # Ensure URL ends with a slash
+          case "$PUBLISHED_URL" in
+            */) ;;
+            *) PUBLISHED_URL="$PUBLISHED_URL/" ;;
+          esac
+          echo "Checking ${PUBLISHED_URL}firebase-config.js"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${PUBLISHED_URL}firebase-config.js" || echo "000")
+          echo "HTTP status for firebase-config.js: $STATUS"
