@@ -34,6 +34,12 @@ jobs:
           };
           EOF
 
+      - name: Verify firebase-config.js exists
+        run: |
+          echo "Listing file and size for firebase-config.js"
+          ls -la firebase-config.js || true
+          echo "Size (bytes):" $(wc -c < firebase-config.js) || true
+
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:

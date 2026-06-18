@@ -136,10 +136,13 @@
     let firebaseConfig;
     let stopInit = false;
     try {
+      // First check the file exists to avoid the dynamic-import 404 uncaught error on GitHub Pages
+      const head = await fetch('./firebase-config.js', { method: 'HEAD' });
+      if (!head.ok) throw new Error('firebase-config.js not found');
       // eslint-disable-next-line import/no-unresolved
       firebaseConfig = (await import('./firebase-config.js')).default;
     } catch (e) {
-      console.error('Missing firebase-config.js. Copy firebase-config.example.js to firebase-config.js and fill values.');
+      console.error('Missing firebase-config.js. Copy firebase-config.example.js to firebase-config.js and fill values.', e);
       document.getElementById('auth-status-message').textContent = 'Falta firebase-config.js — revisa README_FIREBASE.md';
       // Show auth section so the page isn't blank when testing from static hosting
       const authSectionEl = document.getElementById('auth-section');
