@@ -142,16 +142,33 @@
       // eslint-disable-next-line import/no-unresolved
       firebaseConfig = (await import('./firebase-config.js')).default;
     } catch (e) {
-      console.error('Missing firebase-config.js. Copy firebase-config.example.js to firebase-config.js and fill values.', e);
-      document.getElementById('auth-status-message').textContent = 'Falta firebase-config.js — revisa README_FIREBASE.md';
-      // Show auth section so the page isn't blank when testing from static hosting
-      const authSectionEl = document.getElementById('auth-section');
-      if (authSectionEl) {
-        authSectionEl.classList.remove('hidden');
-        authSectionEl.hidden = false;
+      console.warn('Initial import failed for firebase-config.js, will try to load as module tag. Error:', e);
+      document.getElementById('auth-status-message').textContent = 'Falta firebase-config.js — intentando carga alternativa...';
+      // Try to load the file as a module script (this will execute and may set window.__FIREBASE_CONFIG)
+      try {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.src = './firebase-config.js';
+          script.onload = () => resolve();
+          script.onerror = (err) => reject(err);
+          document.head.appendChild(script);
+        });
+        // If the module sets the global, use it
+        if (window.__FIREBASE_CONFIG) {
+          firebaseConfig = window.__FIREBASE_CONFIG;
+        } else {
+          console.warn('Module loaded but window.__FIREBASE_CONFIG not set.');
+        }
+      } catch (loadErr) {
+        console.error('Alternative load failed:', loadErr);
+        const authSectionEl = document.getElementById('auth-section');
+        if (authSectionEl) {
+          authSectionEl.classList.remove('hidden');
+          authSectionEl.hidden = false;
+        }
+        stopInit = true;
       }
-      // Do not re-throw; stop further Firebase initialization but keep UI usable.
-      stopInit = true;
     }
 
     if (!stopInit) {
