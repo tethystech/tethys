@@ -4,11 +4,16 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -16,53 +21,36 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - name: Check out repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create firebase-config.js from GitHub secrets (module + global)
+      - name: Create Firebase config
         run: |
           cat > firebase-config.js <<'EOF'
-const cfg = {
-  apiKey: "${{ secrets.FIREBASE_API_KEY }}",
-  authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
-  projectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
-  storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
-  messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
-  appId: "${{ secrets.FIREBASE_APP_ID }}",
-  measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}"
-};
+          const firebaseConfig = {
+            apiKey: "${{ secrets.FIREBASE_API_KEY }}",
+            authDomain: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
+            projectId: "${{ secrets.FIREBASE_PROJECT_ID }}",
+            storageBucket: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
+            messagingSenderId: "${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}",
+            appId: "${{ secrets.FIREBASE_APP_ID }}",
+            measurementId: "${{ secrets.FIREBASE_MEASUREMENT_ID }}"
+          };
 
-try { window.__FIREBASE_CONFIG = cfg; } catch (e) { /* ignore in non-browser contexts */ }
+          window.__FIREBASE_CONFIG = firebaseConfig;
+          export default firebaseConfig;
+          EOF
 
-export default cfg;
-EOF
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
 
-      - name: Verify firebase-config.js exists
-        run: |
-          echo "Listing file and size for firebase-config.js"
-          ls -la firebase-config.js || true
-          echo "Size (bytes):" $(wc -c < firebase-config.js) || true
-
-      - name: Upload artifact for GitHub Pages
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: Check published firebase-config.js
-        if: always()
-        run: |
-          echo "Published page URL: ${{ steps.deployment.outputs.page_url }}"
-          PUBLISHED_URL="${{ steps.deployment.outputs.page_url }}"
-          # Ensure URL ends with a slash
-          case "$PUBLISHED_URL" in
-            */) ;;
-            *) PUBLISHED_URL="$PUBLISHED_URL/" ;;
-          esac
-          echo "Checking ${PUBLISHED_URL}firebase-config.js"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${PUBLISHED_URL}firebase-config.js" || echo "000")
-          echo "HTTP status for firebase-config.js: $STATUS"
