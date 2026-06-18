@@ -134,14 +134,24 @@
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
     let firebaseConfig;
+    let stopInit = false;
     try {
       // eslint-disable-next-line import/no-unresolved
       firebaseConfig = (await import('./firebase-config.js')).default;
     } catch (e) {
       console.error('Missing firebase-config.js. Copy firebase-config.example.js to firebase-config.js and fill values.');
       document.getElementById('auth-status-message').textContent = 'Falta firebase-config.js — revisa README_FIREBASE.md';
-      throw e; // stop execution so other Firebase calls don't fail silently
+      // Show auth section so the page isn't blank when testing from static hosting
+      const authSectionEl = document.getElementById('auth-section');
+      if (authSectionEl) {
+        authSectionEl.classList.remove('hidden');
+        authSectionEl.hidden = false;
+      }
+      // Do not re-throw; stop further Firebase initialization but keep UI usable.
+      stopInit = true;
     }
+
+    if (!stopInit) {
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -505,6 +515,7 @@
         showSection("auth");
       }
     });
+    }
   </script>
 </body>
 </html>

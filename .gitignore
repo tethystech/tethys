@@ -1,3 +1,5 @@
+# Ignore real Firebase config with credentials
+firebase-config.js
 # Ignore local firebase config with secret keys
 firebase-config.js
 
