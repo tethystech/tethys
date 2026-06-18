@@ -32,7 +32,10 @@
             </div>
             <p id="auth-status-message" class="alert-message"></p>
             <form id="login-form" class="auth-form" autocomplete="on">
-              <h2>Iniciar sesión</h2>
+              <div class="auth-form-header">
+                <span class="auth-form-kicker">Área privada</span>
+                <h2>Iniciar sesión</h2>
+              </div>
               <div class="input-group">
                 <label for="login-email">Email</label>
                 <input id="login-email" type="email" required autocomplete="email" placeholder="cliente@ejemplo.com" />
@@ -41,11 +44,18 @@
                 <label for="login-password">Contraseña</label>
                 <input id="login-password" type="password" required autocomplete="current-password" placeholder="Contraseña" />
               </div>
-              <button type="submit" class="button primary">Entrar</button>
+              <button type="submit" class="button primary auth-submit-button">Entrar</button>
             </form>
 
             <form id="signup-form" class="auth-form hidden" autocomplete="on">
-              <h2>Crear cuenta</h2>
+              <div class="auth-form-header">
+                <span class="auth-form-kicker">Nuevo acceso</span>
+                <h2>Crear cuenta</h2>
+              </div>
+              <div class="input-group signup-email-field">
+                <label for="signup-email">Email</label>
+                <input id="signup-email" type="email" required autocomplete="email" placeholder="cliente@ejemplo.com" />
+              </div>
               <div class="input-group">
                 <label for="signup-name">Nombre</label>
                 <input id="signup-name" type="text" required autocomplete="name" placeholder="Nombre" />
@@ -59,14 +69,10 @@
                 <input id="signup-second-surname" type="text" required placeholder="Apellido materno" />
               </div>
               <div class="input-group">
-                <label for="signup-email">Email</label>
-                <input id="signup-email" type="email" required autocomplete="email" placeholder="cliente@ejemplo.com" />
-              </div>
-              <div class="input-group">
                 <label for="signup-password">Contraseña</label>
                 <input id="signup-password" type="password" required autocomplete="new-password" placeholder="Contraseña" />
               </div>
-              <button type="submit" class="button primary">Registrar cuenta</button>
+              <button type="submit" class="button primary auth-submit-button">Registrar cuenta</button>
             </form>
           </div>
 
@@ -86,13 +92,18 @@
 
             <div id="project-area">
               <div id="create-project-card" class="project-card hidden">
-                <h3>Crear nuevo proyecto</h3>
-                <form id="project-form">
-                      <div class="input-group">
-                    <label for="project-name">Nombre del proyecto</label>
-                    <input id="project-name" type="text" required placeholder="Nombre del proyecto" />
+                <div class="project-card-header">
+                  <div>
+                    <span class="project-card-kicker">Nuevo proyecto</span>
+                    <h3>Crear solicitud</h3>
                   </div>
-                  <button type="submit" class="button primary">Enviar proyecto</button>
+                </div>
+                <form id="project-form" class="project-form">
+                  <div class="input-group project-name-field">
+                    <label for="project-name">Nombre del proyecto</label>
+                    <input id="project-name" type="text" required placeholder="Ej. Automatización interna" />
+                  </div>
+                  <button type="submit" class="button primary project-submit-button">Enviar proyecto</button>
                   <p id="project-status-message" class="alert-message"></p>
                 </form>
               </div>
@@ -200,6 +211,21 @@
       isAdmin: false
     };
 
+    const projectStatuses = ["Solicitado", "Aprobado", "Cancelado"];
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function normalizeProjectStatus(status) {
+      return projectStatuses.includes(status) ? status : "Solicitado";
+    }
+
     function showSection(section) {
       authSection.classList.toggle("hidden", section !== "auth");
       authSection.hidden = section !== "auth";
@@ -244,17 +270,6 @@
       );
       toggleCreateProjectBtn.textContent = "+";
     });
-
-    function formatDate(value) {
-      if (!value) return "-";
-      const date = value.toDate ? value.toDate() : value instanceof Date ? value : null;
-      if (!date) return "-";
-      return date.toLocaleDateString("es-ES", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-      });
-    }
 
     async function ensureUserProfile(user, profileData = {}) {
       const userRef = doc(db, "users", user.uid);
@@ -318,21 +333,28 @@
       const container = document.createElement("article");
       container.className = "project-item";
 
-      const projectName = project.nombre || "Proyecto sin nombre";
-      const projectDate = formatDate(project.fechaCreacion);
-      const status = project.estado || "Solicitado";
-      const clientFullName = project.clienteFullName || "Cliente desconocido";
+      const projectName = escapeHtml(project.nombre || "Proyecto sin nombre");
+      const status = normalizeProjectStatus(project.estado);
+      const clientFullName = escapeHtml(project.clienteFullName || "Cliente desconocido");
 
       const statusBadge = `<span class="status-pill status-${status.toLowerCase()}">${status}</span>`;
 
       let stateControl = statusBadge;
       if (userState.isAdmin) {
         stateControl = `
-          <select id="status-select-${projectId}" class="status-select" data-project-id="${projectId}">
-            <option value="Solicitado" ${status === "Solicitado" ? "selected" : ""}>Solicitado</option>
-            <option value="Aprobado" ${status === "Aprobado" ? "selected" : ""}>Aprobado</option>
-            <option value="Cancelado" ${status === "Cancelado" ? "selected" : ""}>Cancelado</option>
-          </select>
+          <div class="status-action-group" aria-label="Cambiar estado del proyecto">
+            ${projectStatuses.map((statusOption) => `
+              <button
+                type="button"
+                class="status-pill status-action status-${statusOption.toLowerCase()}${status === statusOption ? " active" : ""}"
+                data-project-id="${projectId}"
+                data-status="${statusOption}"
+                aria-pressed="${status === statusOption}"
+              >
+                ${statusOption}
+              </button>
+            `).join("")}
+          </div>
         `;
       }
 
@@ -349,10 +371,13 @@
       `;
 
       if (userState.isAdmin) {
-        const select = container.querySelector("select");
-        select?.addEventListener("change", async (event) => {
-          const newStatus = event.target.value;
-          await updateProjectStatus(projectId, newStatus);
+        const statusButtons = container.querySelectorAll(".status-action");
+        statusButtons.forEach((button) => {
+          button.addEventListener("click", async (event) => {
+            const newStatus = event.currentTarget.dataset.status;
+            if (!newStatus || newStatus === status) return;
+            await updateProjectStatus(projectId, newStatus);
+          });
         });
       }
 
